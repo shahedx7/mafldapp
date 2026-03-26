@@ -1,82 +1,54 @@
 import streamlit as st
+import math
 
-# --- Page Config ---
-st.set_page_config(page_title="Hepatology Clinical Tool", page_icon="🧪", layout="wide")
+st.set_page_config(page_title="MAFLD Risk Stratifier", page_icon="⚖️", layout="centered")
 
-# --- Custom Styling ---
-st.markdown("""
-    <style>
-    .main { background-color: #f8f9fa; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; }
-    </style>
-    """, unsafe_allow_html=True)
+st.title("⚖️ MASLD/MAFLD Clinical Risk Stratifier")
+st.markdown("Automated Triage based on AASLD 2024 Practice Guidance")
 
-st.title("🩺 MASH/MASLD Lifestyle Intervention Suite")
-st.caption("Evidence-Based Precision Weight Loss for Fibrosis Regression")
+# --- Inputs ---
+with st.container():
+    st.subheader("Patient Biochemistry")
+    c1, c2 = st.columns(2)
+    with c1:
+        age = st.number_input("Age (years)", 18, 100, 55)
+        plt = st.number_input("Platelets (10^9/L)", 1, 1000, 210)
+    with c2:
+        ast = st.number_input("AST (U/L)", 1, 500, 38)
+        alt = st.number_input("ALT (U/L)", 1, 500, 42)
 
-# --- Sidebar: Patient Profile & References ---
-with st.sidebar:
-    st.header("Patient Profile")
-    weight = st.number_input("Weight (kg)", 40.0, 250.0, 95.0)
-    height = st.number_input("Height (cm)", 100.0, 250.0, 175.0)
-    age = st.number_input("Age (years)", 18, 100, 45)
-    gender = st.selectbox("Biological Sex", ["Male", "Female"])
-    activity = st.select_slider("Activity Level", options=["Sedentary", "Lightly", "Moderately", "Very"])
-    
-    st.divider()
-    st.markdown("### 📚 Key NEJM References")
-    st.info("""
-    - **Harrison et al. (2024):** Resmetirom (MAESTRO-NASH) - First FDA approved.
-    - **Loomba et al. (2024):** Tirzepatide (SYNERGY-NASH) - 73% MASH resolution.
-    - **Sanyal et al. (2025/26):** Semaglutide (ESSENCE) - Significant fibrosis regression.
-    """)
-
-# --- Logic: BMR & Targets ---
-if gender == "Male":
-    bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
-else:
-    bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161
-
-mult = {"Sedentary": 1.2, "Lightly": 1.375, "Moderately": 1.55, "Very": 1.725}
-tdee = bmr * mult[activity]
-target_kcal = tdee - 600
-target_weight = weight * 0.90  # The 10% Gold Standard
-
-# --- Display: Clinical Metrics ---
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Maintenance (TDEE)", f"{int(tdee)} kcal")
-    st.caption("Standard energy requirements")
-
-with col2:
-    st.metric("Prescribed Daily Intake", f"{int(target_kcal)} kcal", "-600 kcal", delta_color="normal")
-    st.caption("Target for 0.5kg/week loss")
-
-with col3:
-    st.metric("10% Weight Target", f"{target_weight:.1f} kg")
-    st.caption("Threshold for Fibrosis Regression")
+# --- Calculation ---
+# FIB-4 Formula: (Age * AST) / (Platelets * sqrt(ALT))
+fib4 = (age * ast) / (plt * math.sqrt(alt))
 
 st.divider()
 
-# --- Tabs: Intervention & Evidence ---
-tab_plan, tab_evidence = st.tabs(["📋 Clinical Plan", "🔬 Scientific Evidence"])
+# --- Results Logic ---
+st.subheader(f"Calculated FIB-4: {fib4:.2f}")
 
-with tab_plan:
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("Nutritional Prescription")
-        st.write("- **Mediterranean Pattern:** High MUFA (Olive Oil), legumes, veggies.")
-        st.write("- **Fructose Restriction:** Avoid sugar-sweetened beverages to reduce DNL.")
-        st.write("- **Protein Goal:** 1.2 - 1.5g/kg to preserve lean mass during loss.")
-    with c2:
-        st.subheader("Physical Activity")
-        st.write("- **Goal:** 150-200 min/week.")
-        st.write("- **Resistance Training:** Twice weekly to improve insulin sensitivity.")
+if fib4 < 1.30:
+    st.success("🟢 LOW RISK: Advanced Fibrosis Unlikely")
+    res_text = "Manage in Primary Care. Focus on CVD risk and metabolic health. Repeat FIB-4 in 2-3 years."
+    status = "Low Risk"
+elif 1.30 <= fib4 <= 2.67:
+    st.warning("🟡 INTERMEDIATE RISK: Indeterminate Score")
+    res_text = "Requires second-tier testing. Order VCTE (FibroScan) or ELF test to clarify fibrosis stage."
+    status = "Intermediate Risk"
+else:
+    st.error("🔴 HIGH RISK: High Probability of Advanced Fibrosis (F3-F4)")
+    res_text = "Refer to Hepatology for specialized evaluation and potential biopsy/treatment."
+    status = "High Risk"
 
-with tab_evidence:
-    st.subheader("The '10% Rule' (Vilar-Gomez, Gastroenterology 2015)")
-    st.write("Weight loss of ≥10% results in:")
-    st.markdown("- **90%** MASH Resolution")
-    st.markdown("- **45%** Fibrosis Regression (at least one stage)")
-    st.success("This tool aligns with the latest AASLD (2024) and EASL (2024) Practice Guidance.")
+st.info(res_text)
+
+# --- Referral Generator ---
+st.divider()
+st.subheader("📝 Referral Summary")
+referral_note = f"""PATIENT TRIAGE SUMMARY:
+- Age: {age}
+- FIB-4 Score: {fib4:.2f}
+- Classification: {status}
+- Recommendation: {res_text}"""
+
+st.code(referral_note, language="text")
+st.caption("GPs can copy the above text directly into clinical notes or referral letters.")
