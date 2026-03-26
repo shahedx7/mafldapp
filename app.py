@@ -3,99 +3,112 @@ import math
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="MASLD Risk Stratifier",
-    page_icon="🩺",
+    page_title="MASLD Precision Triage",
+    page_icon="🧬",
     layout="centered"
 )
 
-# --- Custom CSS for a Professional Look ---
+# --- High-End Custom CSS ---
 st.markdown("""
     <style>
-    /* Main background */
-    .stApp {
-        background-color: #fcfcfc;
+    /* Google Font Import */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #F9FAFB;
     }
-    /* Headers */
-    h1 {
-        color: #004a99;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+    /* Professional Card Styling */
+    .clinical-card {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E5E7EB;
+        margin-bottom: 20px;
     }
-    /* Metric Card Styling */
-    div[data-testid="stMetricValue"] {
-        font-size: 32px;
-        color: #004a99;
+
+    /* Custom Header */
+    .main-header {
+        color: #111827;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
     }
-    /* Instructions & Info Boxes */
-    .stAlert {
-        border-radius: 10px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+
+    /* Status Badges */
+    .badge {
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-bottom: 10px;
     }
-    /* Button Styling */
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #004a99;
-        color: white;
-    }
+    .badge-green { background-color: #DCFCE7; color: #166534; }
+    .badge-yellow { background-color: #FEF9C3; color: #854d0e; }
+    .badge-red { background-color: #FEE2E2; color: #991b1b; }
+
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- App Header ---
-st.title("🩺 MASLD Clinical Triage Tool")
-st.markdown("**Primary Care Referral Pathway | Based on AASLD 2024 Guidelines**")
-st.divider()
+# --- Header Section ---
+st.markdown('<h1 class="main-header">🧬 MASLD Precision Triage</h1>', unsafe_allow_html=True)
+st.markdown("<p style='color: #6B7280; font-size: 1.1rem;'>Strategic referral pathway based on AASLD 2024 Practice Guidance</p>", unsafe_allow_html=True)
 
-# --- Input Section in a clean card ---
-with st.expander("📝 Enter Patient Lab Data", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        age = st.number_input("Age (years)", 18, 100, 55)
-        plt = st.number_input("Platelets (10⁹/L)", 1, 1000, 210)
-    with col2:
-        ast = st.number_input("AST (U/L)", 1, 500, 38)
-        alt = st.number_input("ALT (U/L)", 1, 500, 42)
+# --- Input Section (Clean Layout) ---
+st.markdown('<div class="clinical-card">', unsafe_allow_html=True)
+st.markdown("<h4 style='margin-top:0;'>Patient Lab Metrics</h4>", unsafe_allow_html=True)
+col1, col2 = st.columns(2)
+with col1:
+    age = st.number_input("Age (years)", 18, 100, 58, help="Patient's current age")
+    plt = st.number_input("Platelets (10⁹/L)", 1, 1000, 185)
+with col2:
+    ast = st.number_input("AST (U/L)", 1, 500, 42)
+    alt = st.number_input("ALT (U/L)", 1, 500, 39)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Calculation ---
 fib4 = (age * ast) / (plt * math.sqrt(alt))
 
-# --- Results Dashboard ---
-st.subheader("Clinical Assessment")
-c1, c2 = st.columns([1, 2])
+# --- Results Section ---
+st.markdown('<div class="clinical-card">', unsafe_allow_html=True)
+st.markdown("<h4>Clinical Assessment Score</h4>", unsafe_allow_html=True)
 
-with c1:
-    st.metric(label="Calculated FIB-4", value=f"{fib4:.2f}")
+res_col1, res_col2 = st.columns([1, 1.5])
 
-with c2:
+with res_col1:
+    st.markdown(f"<h1 style='color: #1F2937; margin:0;'>{fib4:.2f}</h1>", unsafe_allow_html=True)
+    st.caption("FIB-4 Index Result")
+
+with res_col2:
     if fib4 < 1.30:
-        st.success("### 🟢 LOW RISK\n**Advanced Fibrosis Unlikely**")
-        recommendation = "Manage in Primary Care. Focus on CVD risk. Repeat FIB-4 in 24 months."
-        tag = "LOW_RISK"
+        st.markdown('<span class="badge badge-green">LOW RISK</span>', unsafe_allow_html=True)
+        st.markdown("**Management Plan:** Primary Care follow-up. Focus on metabolic health and weight management.")
+        tag, color = "Low Risk", "#166534"
     elif 1.30 <= fib4 <= 2.67:
-        st.warning("### 🟡 INTERMEDIATE RISK\n**Indeterminate Score**")
-        recommendation = "Requires second-tier testing (e.g., VCTE/FibroScan) to clarify fibrosis stage."
-        tag = "INDETERMINATE"
+        st.markdown('<span class="badge badge-yellow">INDETERMINATE</span>', unsafe_allow_html=True)
+        st.markdown("**Management Plan:** Supplemental testing required. Suggest VCTE (FibroScan) or ELF Score.")
+        tag, color = "Indeterminate", "#854d0e"
     else:
-        st.error("### 🔴 HIGH RISK\n**Advanced Fibrosis Likely (F3-F4)**")
-        recommendation = "Direct Referral to Hepatology for specialized evaluation."
-        tag = "HIGH_RISK"
+        st.markdown('<span class="badge badge-red">HIGH RISK</span>', unsafe_allow_html=True)
+        st.markdown("**Management Plan:** Immediate Hepatology referral. High suspicion for F3-F4 advanced fibrosis.")
+        tag, color = "High Risk", "#991b1b"
 
-st.info(f"**Recommendation:** {recommendation}")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Referral Export Tool ---
-st.divider()
-st.subheader("📋 Referral Summary for EMR")
-summary = f"""[MASLD TRIAGE REPORT]
--------------------------
-Age: {age} | PLT: {plt} | AST: {ast} | ALT: {alt}
-Calculated FIB-4 Index: {fib4:.2f}
-Classification: {tag}
-Clinical Plan: {recommendation}
--------------------------
-Generated via MASLD-Triage-v1.0"""
+# --- Interactive Referral Block ---
+st.markdown('<div class="clinical-card">', unsafe_allow_html=True)
+st.markdown("<h4>Integration Summary</h4>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 0.9rem; color: #6B7280;'>Copy the following for EMR clinical notes:</p>", unsafe_allow_html=True)
 
-st.code(summary, language="text")
+ref_text = f"MASLD TRIAGE: FIB-4 Score {fib4:.2f} ({tag}). Recommendation: {tag} pathway."
+st.code(ref_text, language="text")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Footer References ---
-st.caption("Reference: AASLD Practice Guidance on MASLD (2024). Not a substitute for clinical judgment.")
+# --- Institutional Footer ---
+st.markdown("<p style='text-align: center; color: #9CA3AF; font-size: 0.8rem;'>V1.2 Clinical Support Module | Verified against AASLD 2024</p>", unsafe_allow_html=True)
